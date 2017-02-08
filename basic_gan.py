@@ -3,6 +3,7 @@ import argparse
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 
 from helpers.utils import load_mnist, print_flags
 from helpers.initializers import he_xavier
@@ -68,36 +69,64 @@ class GAN(object):
 		g_train = optimizer.minimize(self.g_loss, var_list=self.g_weights)
 		return d_train, g_train
 
-	def sample_z(self):
-		return np.random.uniform(-1., 1., size=[self.batch_size, self.z_dim])
+	def sample_z(self, num_samples):
+		return np.random.uniform(-1., 1., size=[num_samples, self.z_dim])
 
 	def train_discriminator(self, x_in):
-		z_sample = self.sample_z()
+		z_sample = self.sample_z(self.batch_size)
 		fetches = [self.d_train, self.d_loss]
 		_, d_loss = self._sess.run(fetches, feed_dict={self.x_in: x_in, self.z_in:z_sample})
 		return d_loss
 
 	def train_generator(self):
-		z_sample = self.sample_z()
+		z_sample = self.sample_z(self.batch_size)
 		fetches = [self.g_train, self.g_loss]
 		_, g_loss = self._sess.run(fetches, feed_dict={self.z_in: z_sample})
 		return g_loss
+
+	def sample_g(self, num_samples):
+		z_sample = self.sample_z(num_samples=num_samples)
+		return self._sess.run(self.g_sample, feed_dict={self.z_in: z_sample})
+
+def plot_grid(samples):
+    fig = plt.figure(figsize=(4, 4))
+    gs = gridspec.GridSpec(4, 4)
+    gs.update(wspace=0.05, hspace=0.05)
+
+    for i, sample in enumerate(samples):
+        ax = plt.subplot(gs[i])
+        plt.axis('off')
+        ax.set_xticklabels([])
+        ax.set_yticklabels([])
+        ax.set_aspect('equal')
+        plt.imshow(sample.reshape(28, 28), cmap='Greys_r')
+
+    return fig
 
 def main(_):
 	print_flags(FLAGS)
 	gan = GAN(lr=FLAGS.learning_rate, batch_size=FLAGS.batch_size, z_dim=FLAGS.z_dim)
 	mnist = load_mnist()
 
+	plot_index = 0
 	for epoch in range(FLAGS.epochs):
 		for batch in range(mnist.train.num_examples // FLAGS.batch_size):
 			batch_x, _ = mnist.train.next_batch(FLAGS.batch_size)
 			_ = gan.train_discriminator(x_in=batch_x)
 			_ = gan.train_generator()
 
-		d_loss = gan.train_discriminator(x_in=batch_x)
-		g_loss = gan.train_generator()
-		print("Epoch {} Discriminator Loss {} Generator loss {}".format(epoch+1, d_loss, g_loss))
+		if epoch % 10 == 0:
+			d_loss = gan.train_discriminator(x_in=batch_x)
+			g_loss = gan.train_generator()
+			print("Epoch {} Discriminator Loss {} Generator loss {}".format(epoch + 1,
+			                                                                d_loss,
+			                                                                g_loss))
+			gen_sample = gan.sample_g(num_samples=16)
 
+			fig = plot_grid(gen_sample)
+			plt.savefig('{}.png'.format(str(plot_index).zfill(3)), bbox_inches='tight')
+			plot_index += 1
+			plt.close(fig)
 
 FLAGS = None
 if __name__ == "__main__":
