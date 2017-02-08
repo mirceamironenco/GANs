@@ -108,6 +108,7 @@ def main(_):
 	gan = GAN(lr=FLAGS.learning_rate, batch_size=FLAGS.batch_size, z_dim=FLAGS.z_dim)
 	mnist = load_mnist()
 
+	print("Started training {}".format(datetime.now().isoformat()[11:]))
 	plot_index = 0
 	for epoch in range(FLAGS.epochs):
 		for batch in range(mnist.train.num_examples // FLAGS.batch_size):
@@ -127,6 +128,7 @@ def main(_):
 			plt.savefig('{}.png'.format(str(plot_index).zfill(3)), bbox_inches='tight')
 			plot_index += 1
 			plt.close(fig)
+	print("Ended training {}".format(datetime.now().isoformat()[11:]))
 
 FLAGS = None
 if __name__ == "__main__":

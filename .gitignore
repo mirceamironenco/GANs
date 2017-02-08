@@ -25,6 +25,7 @@ var/
 *.egg
 
 MNIST_data
+*.png
 
 # PyCharm
 .idea
