@@ -24,6 +24,8 @@ var/
 .installed.cfg
 *.egg
 
+MNIST_data
+
 # PyCharm
 .idea
 
